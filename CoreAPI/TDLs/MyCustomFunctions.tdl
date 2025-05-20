@@ -1,0 +1,32 @@
+;; MyCustomFunctions.tdl
+
+[#Menu: Gateway of Tally]
+    Add : Item : My Test Func Loaded : Display : ##NONE
+
+;; User Defined Function
+[Function: MySimpleAdder]
+    Returns : Number
+    ;; Relying on TallyPrime to resolve these to the calling Report's scope
+01 : RETURN : ##SVNum1 + ##SVNum2
+
+;; Report to call the UDF and expose its result
+[Report: CallMyAdderViaReport]
+    Form : CallMyAdderForm
+    Variable : SVNum1 : Number
+    Variable : SVNum2 : Number
+
+[Form: CallMyAdderForm]
+    Parts : CallMyAdderPart
+    XMLTags: "FunctionResult"
+
+[Part: CallMyAdderPart]
+    Lines : CallMyAdderLine
+    XMLTags: ""
+
+[Line: CallMyAdderLine]
+    Fields : ResultField
+    XMLTags: ""
+
+[Field: ResultField]
+    Set As : $$MySimpleAdder
+    XMLTags : "SumValue"

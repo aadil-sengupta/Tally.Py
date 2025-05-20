@@ -1,0 +1,70 @@
+;; VoucherUtils.tdl
+;; Contains User Defined Functions for deleting and cancelling vouchers by MasterID.
+
+;;----------------------------------------------------------------------------------------------------
+;; Function: TDCFDeleteVoucherByID
+;; Purpose : Deletes a voucher given its MasterID.
+;; Params  : pVoucherMasterID (String) - The MasterID of the voucher.
+;; Returns : Logical - Yes if deletion is attempted successfully, No otherwise.
+;;----------------------------------------------------------------------------------------------------
+
+    Parameter : pVoucherMasterID : String
+    Returns   : Logical
+    Variable  : WasDeleted : Logical
+
+    010 : TARGET OBJECT : Voucher : ID:##pVoucherMasterID
+    020 : IF : $$IsEmpty:##pVoucherMasterID OR $$IsObjectDead:Voucher:ID:##pVoucherMasterID
+    030 :     LOG : "TDCFDeleteVoucherByID: Voucher MasterID is empty or Voucher does not exist - " + ##pVoucherMasterID
+    040 :     RETURN : No
+    050 : ENDIF
+
+    060 : LOG : "TDCFDeleteVoucherByID: Attempting to delete Voucher with MasterID - " + ##pVoucherMasterID
+    070 : DELETE OBJECT
+    080 : SET : WasDeleted : $$LastResult
+
+    ;; For a more robust check, one might attempt to fetch the object again
+    ;; and verify if it's truly gone, as $$LastResult can be tricky with platform interactions.
+    ;; Example (conceptual - actual implementation might need refinement):
+    ;; 090 : TARGET OBJECT : Voucher : ID:##pVoucherMasterID
+    ;; 100 : IF : $$IsObjectDead:Voucher:ID:##pVoucherMasterID
+    ;; 110 :     SET : WasDeleted : Yes
+    ;; 120 : ELSE
+    ;; 130 :     SET : WasDeleted : No
+    ;; 140 : ENDIF
+
+    150 : IF : ##WasDeleted
+    160 :     LOG : "TDCFDeleteVoucherByID: Deletion action for MasterID " + ##pVoucherMasterID + " reported success."
+    170 : ELSE
+    180 :     LOG : "TDCFDeleteVoucherByID: Deletion action for MasterID " + ##pVoucherMasterID + " reported failure or object still exists."
+    190 : ENDIF
+    200 : RETURN : ##WasDeleted
+
+;;----------------------------------------------------------------------------------------------------
+;; Function: TDCFCancelVoucherByID
+;; Purpose : Cancels a voucher given its MasterID by setting ISCANCELLED to Yes.
+;; Params  : pVoucherMasterID (String) - The MasterID of the voucher.
+;; Returns : Logical - Yes if modification is attempted successfully, No otherwise.
+;;----------------------------------------------------------------------------------------------------
+
+    Parameter : pVoucherMasterID : String
+    Returns   : Logical
+    Variable  : IsSuccess : Logical
+
+    010 : TARGET OBJECT : Voucher : ID:##pVoucherMasterID
+    020 : IF : $$IsEmpty:##pVoucherMasterID OR $$IsObjectDead:Voucher:ID:##pVoucherMasterID
+    030 :     LOG : "TDCFCancelVoucherByID: Voucher MasterID is empty or Voucher does not exist - " + ##pVoucherMasterID
+    040 :     RETURN : No
+    050 : ENDIF
+
+    060 : LOG : "TDCFCancelVoucherByID: Attempting to cancel Voucher with MasterID - " + ##pVoucherMasterID
+    070 : MODIFY OBJECT
+    080 :     SET VALUE : ISCANCELLED : Yes
+    ;; 090 :     SET VALUE : ISOPTIONAL : Yes ;; Uncomment if making it optional is also required
+    100 : SET : IsSuccess : $$LastResult  ;; Captures success of the SET VALUE action
+
+    110 : IF : ##IsSuccess
+    120 :     LOG : "TDCFCancelVoucherByID: Cancellation for MasterID " + ##pVoucherMasterID + " reported success."
+    130 : ELSE
+    140 :     LOG : "TDCFCancelVoucherByID: Cancellation for MasterID " + ##pVoucherMasterID + " reported failure."
+    150 : ENDIF
+    160 : RETURN : ##IsSuccesss
