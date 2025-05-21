@@ -1,0 +1,29 @@
+;; NetworkRequestDemo.tdl (Corrected Part/Line for Repeat)
+
+[#Menu: Gateway of Tally]
+    Add : Item : "Call Public XML API" : Call : FNShowApiResponse
+
+[Function: FNShowApiResponse]
+    01 : Display : RepApiResponse
+
+[Collection: CollExternalApiResponse]
+    RemoteURL : "https://www.w3schools.com/xml/note.xml"
+    XMLObjectPath : "note"
+    Fetch : TO, FROM, HEADING, BODY
+
+[Report: RepApiResponse]
+    Form : FmApiResponse
+    Title: "External API Response"
+
+[Form: FmApiResponse]
+    Parts : PtApiResponseDetails
+    Width : 100% Page
+    Height: 100% Page
+
+;; CORRECTED PART DEFINITION
+[Part: PtApiResponseDetails]
+    ;; This Part will repeat ONE line definition (LnApiDetail) for each object in the collection
+    Lines : LnApiDetail ;; This is the line that will be repeated
+    Repeat: LnApiDetail : CollExternalApiResponse
+    Scroll: Vertical
+    CommonBorder: Yes

@@ -7,3 +7,4 @@
 ; Loading indicator
 [#Menu: Gateway of Tally]
     Add       : Item : SimpleAdd Function Loaded : Display : "Function Test: 5+7=" + $$SimpleAdd:5:7
+

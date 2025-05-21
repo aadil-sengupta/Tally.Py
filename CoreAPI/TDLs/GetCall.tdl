@@ -1,0 +1,53 @@
+;; TDL to Send a Background GET Request Periodically
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; 0. Define a Variable for the Timer Interval                             ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+[Variable: svPingIntervalInSeconds]
+    Type    : Number
+    Default : 5 ;; Set the interval here
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; 1. Define Events to Start and Stop the Timer, and the Timer Event Itself ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+[System: Events]
+    ;; Event to start the timer when Tally application starts
+    ;; Using the variable for the duration
+    StartBackgroundPinger : System Start  : Yes : START TIMER : BackgroundPingTimer : ##svPingIntervalInSeconds
+
+    ;; Timer event that triggers the CALL to our function
+    BackgroundPingEvent   : TIMER         : Yes : CALL          : SendBackgroundGETRequest
+
+    ;; Event to stop the timer when Tally application exits (good practice)
+    StopBackgroundPinger  : System End    : Yes : STOP TIMER  : BackgroundPingTimer
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; 2. Define a Collection that will make the HTTP GET Request                 ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+[Collection: BackgroundGETCollection]
+    ;; IMPORTANT: Replace this URL with your target server URL
+    RemoteURL   : "http://127.0.0.1:8000/xml"
+
+    ;; We are not processing the response, so keeping it minimal.
+    ;; Tally will attempt to parse the response as XML.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; 3. Define a Function to be Called by the Timer                           ;;
+;;    This function will reference the collection, thereby triggering the GET ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+[Function: SendBackgroundGETRequest]
+    Variable : svIsPingCollEmpty : Logical ;; Local variable for the function
+
+010 : SET : svIsPingCollEmpty : $$IsEmpty:BackgroundGETCollection
+
+    ;; This LOG statement is for debugging. Remove or comment out for production.
+020 : LOG : "Background GET Request attempted. Collection empty status: " + ##svIsPingCollEmpty
+
+030 : RETURN
+
+;; svIsPingCollEmpty is defined locally within the Function SendBackgroundGETRequest.
+;; No need for a global [Variable: svIsPingCollEmpty] definition if only used here.
