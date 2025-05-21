@@ -1,0 +1,19 @@
+[Function: Ping]
+    Returns : String
+    00 : RETURN : "Pong"
+    
+[Report : TriggerPingFunctionReport]
+Form : TriggerPingFunctionReportForm
+On : Load : Call : Ping  ;; Call the Ping function when the report loads
+
+[Form : TriggerPingFunctionReportForm]
+Part : TriggerPingFunctionPart
+
+[Part : TriggerPingFunctionPart]
+Line : TriggerPingFunctionLine
+
+[Line : TriggerPingFunctionLine]
+Fields : TriggerPingFunctionField
+
+[Field : TriggerPingFunctionField]
+Set As : "Ping function called successfully via Report Load event."

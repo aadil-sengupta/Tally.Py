@@ -1,0 +1,27 @@
+;; Voucher Deletion TDL
+
+[#Info]
+    Title     : Voucher Deletion Function
+    Author    : Custom
+    Version   : 1.0
+
+[Function: DeleteVoucher]
+    Parameter: Number: String
+    Parameter: Type: String  
+    Parameter: VoucherDate: Date
+    Returns: String: @@DeleteResult
+    
+    01: Variable: DeleteResult: String: "Deletion Failed"
+    02: Collection: "DeleteVoucherCollection": ##
+    03: Walk Collection
+        If: NOT $$IsEmpty:##DeleteVoucherCollection
+        04: Set: DeleteResult: "Voucher Deleted Successfully"
+    05: Return: @@DeleteResult
+
+[Collection: DeleteVoucherCollection]
+    Type        : Voucher
+    Filter      : VoucherNumber = @@Number AND VoucherTypeName = @@Type AND Date = @@VoucherDate
+    Action      : $Delete
+
+[System: DeleteAction]
+    Formula: $$CollectionField:DeleteVoucherCollection:$Delete

@@ -1,0 +1,145 @@
+;; TDL Name: ExternalCompanyInterfacePrime.tdl
+;; Author: ImageIO
+;; Date: May 9, 2025
+;; Description: Tally Prime - Exposes API-like functions.
+;;              Gets company details via EXPORT of a Report.
+;;              Acknowledges import requests via EXECUTE.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Part 1: Get Company Details from a Folder (via CompanyMetaInfo.xml)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+[Function: EXTCOMPINT.GetCompanyDetailsFromFolder]
+    Variable : FolderPath        : String
+    Variable : MetaFilePath      : String
+    Variable : CompanyName       : String
+    Variable : FinancialYearFrom : String
+    Variable : BooksBeginningFrom: String
+    Variable : ResponseXML       : String
+    Variable : FileHandle        : Number
+    Variable : LineRead          : String
+    Variable : HasError          : Logical
+    Variable : FileOpenedSuccess : Logical
+
+    005 : SET : HasError          : YES
+    010 : SET : FileOpenedSuccess : NO
+
+    015 : SET : FolderPath : ##SVFolderPath  ;; This will be set by the Report's StaticVariable
+    020 : IF : $$IsEmpty:##FolderPath
+    025 :    SET : ResponseXML : $$String:"<RESPONSE><STATUS>FAILURE</STATUS><MESSAGE>Folder path not provided to function.</MESSAGE></RESPONSE>"
+    030 :    Return : ##ResponseXML
+    035 : END IF
+
+    040 : SET : MetaFilePath : ##FolderPath + $$SysName:PathSep + "CompanyMetaInfo.xml"
+
+    045 : IF : NOT $$FileExists:##MetaFilePath
+    050 :    SET : ResponseXML : $$String:"<RESPONSE><STATUS>FAILURE</STATUS><MESSAGE>CompanyMetaInfo.xml not found in path: " + ##FolderPath + "</MESSAGE></RESPONSE>"
+    055 :    Return : ##ResponseXML
+    060 : END IF
+
+    065 : TRY
+    070 :    OPEN FILE : ##MetaFilePath : ##FileHandle : TEXT : READ
+    075 :    IF : ##FileHandle > 0
+    080 :        SET : FileOpenedSuccess : YES
+    085 :    ELSE
+    090 :        SET : ResponseXML : $$String:"<RESPONSE><STATUS>FAILURE</STATUS><MESSAGE>Could not open CompanyMetaInfo.xml. (Handle: " + $$String:##FileHandle + ")</MESSAGE></RESPONSE>"
+    095 :        SET : HasError : YES
+    100 :   END IF
+
+    105 :   IF : ##FileOpenedSuccess
+    110 :       SET : CompanyName        : ""
+    115 :       SET : FinancialYearFrom  : ""
+    120 :       SET : BooksBeginningFrom : ""
+    125 :       SET : HasError : YES
+
+    130 :       WHILE : (TRUE)
+    135 :           READ FILE : ##FileHandle : LineRead
+    140 :           IF : $$SysInfo:EOF
+    145 :               BREAK
+    150 :           END IF
+    155 :           SET : LineRead : $$StringTrim:##LineRead
+    160 :           IF : $$StringContains:##LineRead:"<NAME>"
+    165 :               SET : CompanyName : $$StringPart:##LineRead:($$StringLength:"<NAME>" + 1):($$StringSimplePos:"</NAME>":##LineRead - $$StringLength:"<NAME>" - 1)
+    170 :           ELSE IF : $$StringContains:##LineRead:"<FYFROM>"
+    175 :               SET : FinancialYearFrom : $$StringPart:##LineRead:($$StringLength:"<FYFROM>" + 1):($$StringSimplePos:"</FYFROM>":##LineRead - $$StringLength:"<FYFROM>" - 1)
+    180 :           ELSE IF : $$StringContains:##LineRead:"<BOOKSFROM>"
+    185 :               SET : BooksBeginningFrom : $$StringPart:##LineRead:($$StringLength:"<BOOKSFROM>" + 1):($$StringSimplePos:"</BOOKSFROM>":##LineRead - $$StringLength:"<BOOKSFROM>" - 1)
+    190 :           END IF
+    195 :       END WHILE
+    200 :       CLOSE FILE : ##FileHandle
+    205 :       SET : FileOpenedSuccess : NO
+
+    210 :       IF : NOT $$IsEmpty:##CompanyName
+    215 :           SET : ResponseXML : $$String:"<RESPONSE><STATUS>SUCCESS</STATUS><DATA><COMPANYNAME>" + ##CompanyName + "</COMPANYNAME><FINANCIALYEARFROM>" + ##FinancialYearFrom + "</FINANCIALYEARFROM><BOOKSFROM>" + ##BooksBeginningFrom + "</BOOKSFROM></DATA></RESPONSE>"
+    220 :           SET : HasError    : NO
+    225 :       ELSE
+    230 :           SET : ResponseXML : $$String:"<RESPONSE><STATUS>FAILURE</STATUS><MESSAGE>Could not parse details from CompanyMetaInfo.xml. Ensure NAME tag is present and file is structured correctly.</MESSAGE></RESPONSE>"
+    235 :           SET : HasError    : YES
+    240 :       END IF
+    245 :   END IF
+    250 : CATCH
+    255 :    SET : ResponseXML : $$String:"<RESPONSE><STATUS>FAILURE</STATUS><MESSAGE>Exception reading CompanyMetaInfo.xml: " + $$ExceptionInfo + "</MESSAGE></RESPONSE>"
+    260 :    SET : HasError    : YES
+    265 :    IF : ##FileOpenedSuccess
+    270 :        CLOSE FILE : ##FileHandle
+    275 :        SET : FileOpenedSuccess : NO
+    280 :    END IF
+    285 : END TRY
+
+    290 : IF : ##HasError AND $$IsEmpty:##ResponseXML
+    295 :    SET : ResponseXML : $$String:"<RESPONSE><STATUS>FAILURE</STATUS><MESSAGE>An unknown error occurred while processing company details.</MESSAGE></RESPONSE>"
+    300 : END IF
+
+    305 : Return : ##ResponseXML
+
+;; Report definition to output the XML string generated by the function
+[Report: EXTCOMPINT.ReportGetCompanyDetails]
+    Form             : EXTCOMPINT.FormGetCompanyDetails
+    ;; SVFolderPath will be set by the incoming XML Request's STATICVARIABLES block for the EXPORT request.
+
+[Form: EXTCOMPINT.FormGetCompanyDetails]
+    Part : EXTCOMPINT.PartGetCompanyDetails
+
+[Part: EXTCOMPINT.PartGetCompanyDetails]
+    Line : EXTCOMPINT.LineGetCompanyDetails
+
+[Line: EXTCOMPINT.LineGetCompanyDetails]
+    Fields : EXTCOMPINT.FieldGetCompanyDetails
+
+[Field: EXTCOMPINT.FieldGetCompanyDetails]
+    Set As : $$Call:"EXTCOMPINT.GetCompanyDetailsFromFolder" ;; Calls the function, ##SVFolderPath is in context
+    Width  : Full
+    ;; If the above XMLTag : "" doesn't make the output raw, Tally will wrap it,
+    ;; e.g., <FIELD><VALUE>...your string...</VALUE></FIELD> or similar.
+    ;; The client would then need to parse this.
+    ;; A more advanced method might involve using TDL's File Export objects if raw output is critical.
+    ;; For now, this is the simplest way to tie a function's string output to a report.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Part 2: Acknowledge Request for Company Data Import (using EXECUTE)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+[Function: EXTCOMPINT.AcknowledgeImportRequest]
+    Variable : ImportFilePath : String
+    Variable : ResponseXML    : String
+
+    05 : SET : ImportFilePath : ##SVImportFilePath
+
+    10 : IF : $$IsEmpty:##ImportFilePath
+    15 :    SET : ResponseXML : $$String:"<RESPONSE><STATUS>FAILURE</STATUS><MESSAGE>Import file path not provided for acknowledgement.</MESSAGE></RESPONSE>"
+    20 :    Return : ##ResponseXML
+    25 : END IF
+
+    30 : IF : NOT $$FileExists:##ImportFilePath
+    35 :    SET : ResponseXML : $$String:"<RESPONSE><STATUS>FAILURE</STATUS><MESSAGE>Import XML file for acknowledgement not found: " + ##ImportFilePath + "</MESSAGE></RESPONSE>"
+    40 :    Return : ##ResponseXML
+    45 : END IF
+
+    50 : SET : ResponseXML : $$String:"<RESPONSE><STATUS>ACKNOWLEDGEMENT</STATUS><MESSAGE>Request to import file '" + ##ImportFilePath + "' acknowledged. For actual import, please send a Tally XML Request with TALLYREQUEST type 'IMPORT' and provide the data or file path as per Tally integration guidelines.</MESSAGE></RESPONSE>"
+    55 : Return : ##ResponseXML
+
+[Function: MySimpleActionTest]
+    Variable : ResponseFromFunc : String
+    05 : SET : ResponseFromFunc : $$Call:"EXTCOMPINT.AcknowledgeImportRequest"
+    ;; The ##ResponseFromFunc (simple acknowledgement string)
+    ;; might be accessible in the <RESULT> tag of Tally's default response to this EXECUTE request.

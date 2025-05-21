@@ -1,0 +1,66 @@
+;; Variables to hold parameters (as defined before)
+[Variable: FilterPartyNameVar]
+    Type: String
+[Variable: VoucherTypeFilterVar]
+    Type: String
+[Variable: MinimumAmountVar]
+    Type: Amount
+
+;; Collection to fetch and filter vouchers (as defined before)
+[Collection: EfficientFilteredVouchers]
+    ParmVar         : pvFromDate        : Date      : ##SVFROMDATE
+    ParmVar         : pvToDate          : Date      : ##SVTODATE
+    ParmVar         : pvPartyName       : String    : ##FilterPartyNameVar
+    ParmVar         : pvVoucherType     : String    : ##VoucherTypeFilterVar
+    ParmVar         : pvMinAmount       : Amount    : ##MinimumAmountVar
+
+    Type            : Voucher
+    Fetch           : Date, VoucherNumber, PartyLedgerName, Amount, VoucherTypeName
+    Filter          : VoucherFilterLogic
+
+[System: Formula]
+VoucherFilterLogic : ($Date >= ##pvFromDate AND $Date <= ##pvToDate) AND \
+                     ($VoucherTypeName = ##pvVoucherType) AND \
+                     ($PartyLedgerName CONTAINS ##pvPartyName) AND \
+                     ($Amount >= ##pvMinAmount)
+
+;; Report Definition
+[Report: MyEfficientVoucherReport]
+    Form            : MyEfficientVoucherForm
+    Collection      : EfficientFilteredVouchers
+    ;; Plain XML : Yes  ;; Uncomment this if you want unformatted XML output,
+                       ;; suitable for direct data interchange.
+                       ;; This affects the overall structure, not just a single tag.
+
+[Form: MyEfficientVoucherForm]
+    Part            : MyEfficientVoucherPart
+    XMLTag          : "VouchersList" ;; Set the desired "root" tag for your data here
+
+[Part: MyEfficientVoucherPart]
+    Line            : MyEfficientVoucherLine
+    Repeat          : MyEfficientVoucherLine : EfficientFilteredVouchers
+    ;; XMLTag      : "VoucherRecords" ;; Could also be placed here if preferred over Form level
+
+[Line: MyEfficientVoucherLine]
+    Fields          : FldVchDate, FldVchNumber, FldVchParty, FldVchAmount, FldVchType
+    XMLTag          : "VoucherDetail" ;; Each repeating line will be wrapped in this tag
+
+[Field: FldVchDate]
+    Set As          : $Date
+    XMLTag          : "VoucherDate"
+
+[Field: FldVchNumber]
+    Set As          : $VoucherNumber
+    XMLTag          : "VoucherID"
+
+[Field: FldVchParty]
+    Set As          : $PartyLedgerName
+    XMLTag          : "Party"
+
+[Field: FldVchAmount]
+    Set As          : $Amount
+    XMLTag          : "TransactionAmount"
+
+[Field: FldVchType]
+    Set As          : $VoucherTypeName
+    XMLTag          : "VoucherType"

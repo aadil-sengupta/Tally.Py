@@ -1,0 +1,23 @@
+[Function: LoadCompanyFromPath]
+    Parameter : String : CompanyPath // This is the input parameter from XML
+    Action    : Load Company : ##CompanyPath // Corrected Action
+
+[Report: LoadCompany]
+    Form : LoadCompanyForm
+
+[Form: LoadCompanyForm]
+    Part : LoadCompanyPart
+
+[Part: LoadCompanyPart]
+    Line : LoadCompanyLine
+
+[Line: LoadCompanyLine]
+    Field : CompanyPath
+
+[Field: CompanyPath]
+    Use : Name Field
+    Set as : ""
+    Storage : CompanyPath
+
+[System: UDF]
+    CompanyPath : String : 1000
