@@ -1,0 +1,189 @@
+**Goal:**
+To create a simple TDL User Defined Function (UDF) that adds two numbers and invoke this UDF from an external application using Tally's XML API, receiving the sum back in an XML response.
+
+**Tally Version:** TallyPrime Release 6.0 (Latest)
+
+**Initial TDL (`MyCustomFunctions.tdl`):**
+```tdl
+[Function: MySimpleAdder]
+    Parameter : PNum1 : Number
+    Parameter : PNum2 : Number
+    Returns : Number
+01 : RETURN : ##PNum1 + ##PNum2
+```
+
+**Initial XML Request (Attempt 1 - Direct Function Call with `FUNCPARAMLIST`):**
+```xml
+<ENVELOPE>
+    <HEADER>
+        <VERSION>1</VERSION>
+        <TALLYREQUEST>EXPORT</TALLYREQUEST>
+        <TYPE>FUNCTION</TYPE>
+        <ID>$$MySimpleAdder</ID>
+    </HEADER>
+    <BODY>
+        <DESC>
+            <FUNCPARAMLIST>
+                <PARAM>10</PARAM>
+                <PARAM>25</PARAM>
+            </FUNCPARAMLIST>
+        </DESC>
+    </BODY>
+</ENVELOPE>
+```
+**Result 1:** Error from Tally: `<ERRORMSG>Could not find: $$MySimpleAdder</ERRORMSG><ERRORMSG>Function Execution Failed!</ERRORMSG>`
+
+**Troubleshooting Steps & Observations (leading to Attempt 2):**
+*   **TDL Loading Confirmation:**
+    *   Added `[#Menu: Gateway of Tally] Add : Item : My Test Func Loaded : Display : ##NONE` to the TDL.
+    *   **Observation:** After restarting Tally, "My Test Func Loaded" appeared in the Gateway of Tally menu, confirming the TDL file itself was being loaded. A screenshot was provided showing "MyCustomFunctions.tdl" as "Loaded" in Tally's configuration.
+*   Tally was confirmed to be running as "Both" (Server and Client).
+*   `User TDL = Yes` was confirmed in `Tally.ini`.
+
+**Attempt 2 - Direct Function Call with `STATICVARIABLES` and `$$` in ID:**
+*   **Modified TDL:**
+    ```tdl
+    [Function: MySimpleAdder]
+        Returns : Number
+    01 : RETURN : ##SVNum1 + ##SVNum2
+    ```
+*   **Modified XML:**
+    ```xml
+    <ENVELOPE>
+        <HEADER>
+            <VERSION>1</VERSION>
+            <TALLYREQUEST>EXPORT</TALLYREQUEST>
+            <TYPE>FUNCTION</TYPE>
+            <ID>$$MySimpleAdder</ID>
+        </HEADER>
+        <BODY>
+            <DESC>
+                <STATICVARIABLES>
+                    <SVNUM1 TYPE="Number">10</SVNUM1>
+                    <SVNUM2 TYPE="Number">25</SVNUM2>
+                </STATICVARIABLES>
+            </DESC>
+        </BODY>
+    </ENVELOPE>
+    ```
+**Result 2:** Same error: `<ERRORMSG>Could not find: $$MySimpleAdder</ERRORMSG>...`
+*   **Observation:** Calculator panel test (`##SVNum1`) showed "Could not understand word ##SVNum1", which was explained as normal post-request behavior as SV variables are scoped to the XML request context.
+
+**Attempt 3 - Direct Function Call with `STATICVARIABLES` and NO `$$` in ID:**
+*   **TDL:** Remained the same as Attempt 2.
+*   **Modified XML:**
+    ```xml
+    <ENVELOPE>
+        <HEADER>
+            <VERSION>1</VERSION>
+            <TALLYREQUEST>EXPORT</TALLYREQUEST>
+            <TYPE>FUNCTION</TYPE>
+            <ID>MySimpleAdder</ID>  <!-- '$$' removed from ID -->
+        </HEADER>
+        <BODY>
+            <DESC>
+                <STATICVARIABLES>
+                    <SVNUM1 TYPE="Number">10</SVNUM1>
+                    <SVNUM2 TYPE="Number">25</SVNUM2>
+                </STATICVARIABLES>
+            </DESC>
+        </BODY>
+    </ENVELOPE>
+    ```
+**Result 3:** Same error: `<ERRORMSG>Could not find: MySimpleAdder</ERRORMSG>...` (or similar, indicating function not found).
+
+**Attempt 4 - Report-Based Invocation (UDF called from a Field in a TDL Report):**
+*   **Modified TDL:**
+    ```tdl
+    [#Menu: Gateway of Tally] Add : Item : My Test Func Loaded : Display : ##NONE
+    [Function: MySimpleAdder]
+        Returns : Number
+    01 : RETURN : ##SVNum1 + ##SVNum2
+    [Report: CallMyAdderViaReport]
+        Form : CallMyAdderForm
+        SVNum1 : Number  ;; This was the initial syntax error point
+        SVNum2 : Number
+    [Form: CallMyAdderForm] Parts : CallMyAdderPart XMLTags: "FunctionResult"
+    [Part: CallMyAdderPart] Lines : CallMyAdderLine XMLTags: ""
+    [Line: CallMyAdderLine] Fields : ResultField XMLTags: ""
+    [Field: ResultField] Set As : $$MySimpleAdder XMLTags : "SumValue"
+    ```
+*   **XML Request:**
+    ```xml
+    <ENVELOPE>
+        <HEADER>
+            <VERSION>1</VERSION>
+            <TALLYREQUEST>EXPORT</TALLYREQUEST>
+            <TYPE>Report</TYPE> <!-- Based on newer PDF -->
+            <ID>CallMyAdderViaReport</ID>
+        </HEADER>
+        <BODY>
+            <DESC>
+                <STATICVARIABLES>
+                    <SVNUM1 TYPE="Number">30</SVNUM1>
+                    <SVNUM2 TYPE="Number">40</SVNUM2>
+                    <SVEXPORTFORMAT>$$SysName:XML</SVEXPORTFORMAT>
+                </STATICVARIABLES>
+            </DESC>
+        </BODY>
+    </ENVELOPE>
+    ```
+**Result 4:** Tally Response: `<RESPONSE>Unknown Request, cannot be processed</RESPONSE>`
+*   **Observation:** TDL loading screen showed an error: `MyCustomFunctions.tdl"(14): error T0014: Incorrect attribute 'SVNum1' is used for the definition 'Report'.` This indicated that `SVNum1 : Number` was not the correct way to declare variables at the Report scope.
+
+**Attempt 5 - Report-Based Invocation with Corrected TDL Variable Declaration:**
+*   **Modified TDL (Corrected Variable Declaration):**
+    ```tdl
+    [Report: CallMyAdderViaReport]
+        Form : CallMyAdderForm
+        Variable : SVNum1 : Number ;; Corrected
+        Variable : SVNum2 : Number ;; Corrected
+    ;; ... rest of the report and function definition remained the same
+    ```
+*   **XML Request:** Same as Attempt 4 (using `<TYPE>Report</TYPE>`).
+**Result 5:** Tally Response: `<ENVELOPE></ENVELOPE>` (Empty Envelope).
+*   **Observation:** TDL loaded successfully without errors (confirmed by screenshot). `tally.imp` was clean. Calculator panel was empty.
+
+**Attempt 6 - Report-Based Invocation with Explicit `$$ReportObject` in UDF:**
+*   **Modified TDL (UDF changed):**
+    ```tdl
+    [Function: MySimpleAdder]
+        Returns : Number
+    01 : RETURN : ##($$ReportObject:SVNum1) + ##($$ReportObject:SVNum2)
+    ;; Report definition remained as in Attempt 5
+    ```
+*   **XML Request:** Same as Attempt 4 & 5 (using `<TYPE>Report</TYPE>`).
+**Result 6:** Tally Response: `<ENVELOPE></ENVELOPE>` (Empty Envelope).
+*   **Observation:** TallyPrime version confirmed as 6.0 (Latest). Calculator panel empty.
+
+**Attempt 7 - Report-Based Invocation with `<TYPE>Data</TYPE>` in XML (Reverting to older convention for Report Export):**
+*   **TDL:** Reverted UDF to simpler `01 : RETURN : ##SVNum1 + ##SVNum2` (as in Attempt 5). Report definition remained the same.
+*   **Modified XML:**
+    ```xml
+    <ENVELOPE>
+        <HEADER>
+            <VERSION>1</VERSION>
+            <TALLYREQUEST>EXPORT</TALLYREQUEST>
+            <TYPE>Data</TYPE>      <!-- Changed to 'Data' -->
+            <ID>CallMyAdderViaReport</ID>
+        </HEADER>
+        <BODY>
+            <DESC>
+                <STATICVARIABLES>
+                    <SVEXPORTFORMAT>$$SysName:XML</SVEXPORTFORMAT>
+                    <SVNUM1 TYPE="Number">50</SVNUM1>
+                    <SVNUM2 TYPE="Number">60</SVNUM2>
+                </STATICVARIABLES>
+            </DESC>
+        </BODY>
+    </ENVELOPE>
+    ```
+**Result 7:** Tally Response: `<RESPONSE>Unknown Request, cannot be processed</RESPONSE>`
+
+**Current Status:**
+*   The TDL file (`MyCustomFunctions.tdl`) is confirmed to be loading correctly into TallyPrime 6.0 without syntax errors, and the test menu item is visible.
+*   Direct function calls (using `<TYPE>FUNCTION</TYPE>` in XML, with or without `$$` in `<ID>`, and with `FUNCPARAMLIST` or `STATICVARIABLES`) result in "Could not find function" errors.
+*   Report-based invocation (using `<TYPE>Report</TYPE>` or `<TYPE>Data</TYPE>` in XML to call a TDL report which internally calls the UDF) has resulted in either "Unknown Request" or an empty `<ENVELOPE></ENVELOPE>` response.
+*   The issue is confirmed to be specific to the XML/TDL interaction for UDFs, not Tally loading, port accessibility, or basic TDL syntax errors within the loaded file.
+
+This summary captures the progression and the specific configurations tried.

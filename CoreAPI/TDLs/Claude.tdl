@@ -1,0 +1,9 @@
+[Function: SimpleAdd]
+    Parameter : Num1 : Number
+    Parameter : Num2 : Number 
+    Returns   : Number
+01  : RETURN  : ##Num1 + ##Num2
+
+; Loading indicator
+[#Menu: Gateway of Tally]
+    Add       : Item : SimpleAdd Function Loaded : Display : "Function Test: 5+7=" + $$SimpleAdd:5:7

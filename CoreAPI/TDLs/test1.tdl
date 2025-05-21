@@ -68,3 +68,5 @@
     140 :     LOG : "TDCFCancelVoucherByID: Cancellation for MasterID " + ##pVoucherMasterID + " reported failure."
     150 : ENDIF
     160 : RETURN : ##IsSuccesss
+
+;;---------------------------------------------------------------------------------------------------

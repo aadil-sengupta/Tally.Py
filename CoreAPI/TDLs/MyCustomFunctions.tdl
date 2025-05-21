@@ -6,27 +6,29 @@
 ;; User Defined Function
 [Function: MySimpleAdder]
     Returns : Number
-    ;; Relying on TallyPrime to resolve these to the calling Report's scope
+    ;; This function will use SVNum1 and SVNum2 from the Report's context
 01 : RETURN : ##SVNum1 + ##SVNum2
 
 ;; Report to call the UDF and expose its result
 [Report: CallMyAdderViaReport]
     Form : CallMyAdderForm
+    ;; Variables to be populated by STATICVARIABLES from the XML request
     Variable : SVNum1 : Number
     Variable : SVNum2 : Number
 
 [Form: CallMyAdderForm]
     Parts : CallMyAdderPart
-    XMLTags: "FunctionResult"
+    XMLTags: "FunctionResult" ;; Root tag for the form's output in XML
 
 [Part: CallMyAdderPart]
     Lines : CallMyAdderLine
-    XMLTags: ""
+    XMLTags: "" ;; Suppress default Part tag if not needed for cleaner XML
 
 [Line: CallMyAdderLine]
     Fields : ResultField
-    XMLTags: ""
+    XMLTags: "" ;; Suppress default Line tag if not needed
 
 [Field: ResultField]
+    ;; The UDF is called. It will use SVNum1 and SVNum2 from this Report's scope.
     Set As : $$MySimpleAdder
-    XMLTags : "SumValue"
+    XMLTags : "SumValue"    ;; This tag will contain the result in the XML response
