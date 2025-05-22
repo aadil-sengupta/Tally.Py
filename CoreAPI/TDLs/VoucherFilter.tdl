@@ -1,0 +1,163 @@
+;; Global Variable to store the dynamic filter string
+[Variable: SV_VoucherFilterString]
+    Type    : String
+    Default : "" ;; WORKS
+
+;; Function Definition to build the filter string
+[Function: Fn_BuildVoucherFilter]
+    ;; Parameters for filtering - can be left blank
+    Parameter : P_CompanyName     : String  ;; Optional: Company Name
+    Parameter : P_LedgerName      : String  ;; Optional: Ledger Name involved in voucher
+    Parameter : P_MasterID        : String  ;; Optional: Master ID of the voucher
+    Parameter : P_MinAmount       : Amount  ;; Optional: Minimum voucher amount
+    Parameter : P_MaxAmount       : Amount  ;; Optional: Maximum voucher amount
+    Parameter : P_FromDate        : Date    ;; Optional: Start of date range
+    Parameter : P_ToDate          : Date    ;; Optional: End of date range
+    Parameter : P_VoucherTypeName : String  ;; Optional: Specific Voucher Type (e.g., "Sales", "Purchase")
+    
+    Variable  : V_FilterCond      : String  ;; Variable to build individual conditions
+    Variable  : V_FinalFilter     : String  ;; Variable to hold the combined filter string
+
+    05 : SET : V_FinalFilter : "" ;; Initialize the filter string
+
+    ;; Condition for Company Name (requires Tally to be in the context of that company or specific logic)
+    ;; Note: Filtering by company name within a general voucher collection across companies is complex
+    ;; and usually handled by ensuring Tally is loaded with the specific company first.
+    ;; This example assumes the UDF is used in a context where SVCURRENTCOMPANY can be influenced or is already set.
+    ;; If P_CompanyName is provided and different from current, it might indicate a need to switch company context
+    ;; which is beyond simple filter string construction here. For this example, we'll assume it's for the current company.
+
+    10 : SET : V_FilterCond : ""
+    15 : IF : NOT $$IsEmpty:##P_VoucherTypeName
+    20 : SET : V_FilterCond : "$VoucherTypeName = " + """" + ##P_VoucherTypeName + """"
+    25 : SET : V_FinalFilter : ##V_FinalFilter + IF $$IsEmpty:##V_FinalFilter THEN ##V_FilterCond ELSE " AND " + ##V_FilterCond
+    30 : ENDIF
+
+    35 : SET : V_FilterCond : ""
+    40 : IF : NOT $$IsEmpty:##P_LedgerName
+        ;; This condition checks if the ledger name exists in any of the ledger entries
+        ;; This is a simplified representation; a more robust check might involve walking AllLedgerEntries
+    45 : SET : V_FilterCond : "$PartyLedgerName = " + """" + ##P_LedgerName + """" + " OR $$FilterHasLedger:AllLedgerEntries:" + """" + ##P_LedgerName + """"
+    50 : SET : V_FinalFilter : ##V_FinalFilter + IF $$IsEmpty:##V_FinalFilter THEN ##V_FilterCond ELSE " AND " + ##V_FilterCond
+    55 : ENDIF
+
+    60 : SET : V_FilterCond : ""
+    65 : IF : NOT $$IsEmpty:##P_MasterID
+    70 : SET : V_FilterCond : "$MasterID = " + ##P_MasterID ;; Assuming MasterID is a direct method
+    75 : SET : V_FinalFilter : ##V_FinalFilter + IF $$IsEmpty:##V_FinalFilter THEN ##V_FilterCond ELSE " AND " + ##V_FilterCond
+    80 : ENDIF
+
+    ;; Filter for Amount Range
+    85 : SET : V_FilterCond : ""
+    90 : IF : ##P_MinAmount > 0 AND ##P_MaxAmount > 0 AND ##P_MaxAmount >= ##P_MinAmount
+    95 : SET : V_FilterCond : "$Amount >= " + $$String:##P_MinAmount + " AND $Amount <= " + $$String:##P_MaxAmount
+   100 : ELSE IF : ##P_MinAmount > 0
+   105 : SET : V_FilterCond : "$Amount >= " + $$String:##P_MinAmount
+   110 : ELSE IF : ##P_MaxAmount > 0
+   115 : SET : V_FilterCond : "$Amount <= " + $$String:##P_MaxAmount
+   120 : ENDIF
+   125 : IF : NOT $$IsEmpty:##V_FilterCond
+   130 : SET : V_FinalFilter : ##V_FinalFilter + IF $$IsEmpty:##V_FinalFilter THEN ##V_FilterCond ELSE " AND " + ##V_FilterCond
+   135 : ENDIF
+
+    ;; Filter for Date Range
+   140 : SET : V_FilterCond : ""
+   145 : IF : NOT $$IsEmpty:##P_FromDate AND NOT $$IsEmpty:##P_ToDate
+   150 : SET : V_FilterCond : "$Date >= " + $$String:##P_FromDate + " AND $Date <= " + $$String:##P_ToDate
+   155 : ELSE IF : NOT $$IsEmpty:##P_FromDate
+   160 : SET : V_FilterCond : "$Date >= " + $$String:##P_FromDate
+   165 : ELSE IF : NOT $$IsEmpty:##P_ToDate
+   170 : SET : V_FilterCond : "$Date <= " + $$String:##P_ToDate
+   175 : ENDIF
+   180 : IF : NOT $$IsEmpty:##V_FilterCond
+   185 : SET : V_FinalFilter : ##V_FinalFilter + IF $$IsEmpty:##V_FinalFilter THEN ##V_FilterCond ELSE " AND " + ##V_FilterCond
+   190 : ENDIF
+
+   195 : SET : SV_VoucherFilterString : ##V_FinalFilter
+   200 : RETURN : ##V_FinalFilter ;; Returns the constructed filter string
+
+;; Helper function (conceptual) to check if a ledger exists in ledger entries
+;; This would need to be more robust in a real scenario, possibly walking the collection
+[Function: Fn_FilterHasLedger]
+    Parameter : P_LedgerEntriesColl : Collection
+    Parameter : P_TargetLedgerName  : String
+    Returns   : Logical
+
+    05 : ;; Simplified logic - actual implementation would walk P_LedgerEntriesColl
+    10 : IF : $$CollectionFieldByName:$LedgerName:##P_TargetLedgerName:##P_LedgerEntriesColl != ""
+    15 : RETURN : Yes
+    20 : ELSE
+    25 : RETURN : No
+    30 : ENDIF
+
+;; Collection Definition using the UDF
+[Collection: FilteredVouchers]
+    Type   : Voucher
+    ;; Fetch necessary methods
+    Fetch  : Date, VoucherNumber, VoucherTypeName, PartyLedgerName, Amount, MasterID, AllLedgerEntries.LIST
+
+    ;; The Filter attribute can use a system formula that calls our UDF
+    ;; The UDF's parameters would be set by other variables or fields in the report context
+    ;; For example, SV_CompanyName, SV_LedgerName etc. would be set before this collection is gathered.
+    Filter : @@ApplyVoucherFilter
+
+;; System formula to call the UDF.
+;; The actual parameter values (e.g., ##SV_CompanyName) must be set in the Report
+;; context before this Collection is used.
+[System: Formula]
+    ApplyVoucherFilter : $$ExecuteFunction:"Fn_BuildVoucherFilter":##SV_ReportCompanyName:##SV_ReportLedgerName:##SV_ReportMasterID:##SV_ReportMinAmount:##SV_ReportMaxAmount:##SV_ReportFromDate:##SV_ReportToDate:##SV_ReportVoucherTypeName
+
+;; Report definition to display filtered vouchers (Conceptual)
+[Report: FilteredVoucherReport]
+    Form : FilteredVoucherForm
+    ;; Variables to hold filter criteria, these would be set by user input fields in a real report
+    Variable : SV_ReportCompanyName     : String
+    Variable : SV_ReportLedgerName      : String
+    Variable : SV_ReportMasterID        : String
+    Variable : SV_ReportMinAmount       : Amount
+    Variable : SV_ReportMaxAmount       : Amount
+    Variable : SV_ReportFromDate        : Date
+    Variable : SV_ReportToDate          : Date
+    Variable : SV_ReportVoucherTypeName : String
+
+    ;; Example: Set some default filter values before displaying the report
+    Set : SV_ReportFromDate : $$Date:"01-Apr-2023"
+    Set : SV_ReportToDate   : $$Date:"31-Mar-2024"
+    ;; Other filter variables (SV_ReportLedgerName, etc.) would be set via UI fields
+
+[Form: FilteredVoucherForm]
+    Parts : FilteredVoucherPart
+    ;; Add fields here for user to input filter criteria which modify the SV_Report... variables
+
+[Part: FilteredVoucherPart]
+    Lines  : FilteredVoucherLine
+    Repeat : FilteredVoucherLine : FilteredVouchers ;; Use the collection
+    Scroll : Vertical
+
+[Line: FilteredVoucherLine]
+    Fields : FldVchNo, FldDate, FldParty, FldAmount
+    Border : Thin Bottom
+
+[Field: FldVchNo]
+    Use    : Voucher Number Field
+    Set As : $VoucherNumber
+    Width  : 20
+
+[Field: FldDate]
+    Use    : Uni Date Field
+    Set As : $Date
+    Width  : 15
+
+[Field: FldParty]
+    Use    : Name Field
+    Set As : $PartyLedgerName
+    Width  : 30
+
+[Field: FldAmount]
+    Use    : Amount Forex Field
+    Set As : $Amount
+    Width  : 20
+    Align  : Right
+
+;; test query
+;; $$Fn_BuildVoucherFilter:"Weyug":"SalesTest":"":50:200:$$Date:"01-Apr-2024":$$Date:"01-May-2025":"Sales"
