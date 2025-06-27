@@ -1,5 +1,3 @@
 /CoreAPI/__pycache__
-/CompanionApp/venv/Lib/site-packages/dotenv/__pycache__
-/CompanionApp/venv/Lib/site-packages/dns/dnssecalgs/__pycache__
 *.pyc
 *.pyx
