@@ -10,10 +10,10 @@ readme = "README.md"
 requires-python = ">=3.7"
 license = {text = "MIT"}
 authors = [
-    {name = "Your Name", email = "your.email@example.com"},
+    {name = "Aadil Sengupta", email = "aadilsengupta27@gmail.com"},
 ]
 maintainers = [
-    {name = "Your Name", email = "your.email@example.com"},
+    {name = "Aadil Sengupta", email = "aadilsengupta27@gmail.com"},
 ]
 keywords = ["tally", "accounting", "api", "xml", "integration", "erp"]
 classifiers = [
@@ -46,10 +46,10 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/yourusername/tally-integration"
-"Bug Reports" = "https://github.com/yourusername/tally-integration/issues"
-"Source" = "https://github.com/yourusername/tally-integration"
-Documentation = "https://github.com/yourusername/tally-integration/blob/main/README.md"
+Homepage = "https://github.com/aadil-sengupta/Tally.Py"
+"Bug Reports" = "https://github.com/aadil-sengupta/Tally.Py/issues"
+"Source" = "https://github.com/aadil-sengupta/Tally.Py"
+Documentation = "https://github.com/aadil-sengupta/Tally.Py/blob/main/README.md"
 
 [tool.setuptools.packages.find]
 where = ["."]

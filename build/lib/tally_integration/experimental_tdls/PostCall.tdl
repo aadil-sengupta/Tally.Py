@@ -1,0 +1,111 @@
+;; TDL to send a POST request with "test" when a menu is opened
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; 1. Add a new menu item to Gateway of Tally                               ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+[#Menu: Gateway of Tally]
+    Add: Item: "Send POST Request": Display: MyIntermediatePostReport
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; 2. Define a System Formula for the POST URL                              ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+[System: Formula]
+    MyPostRequestURL: "http://127.0.0.1:8000/post"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; 3. Define the Report that will form the body of the POST request         ;;
+;;    This report will effectively contain the "test" string within an XML tag. ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+[Report: MyPostDataPayloadReport]
+    Form: MyPostDataPayloadForm
+    PlainXML: Yes ;; Aims to produce a more minimal XML structure [cite: 1030]
+
+[Form: MyPostDataPayloadForm]
+    Parts: MyPostDataPayloadPart
+    Output: MyPostDataPayloadField ;; Ensures this field's content is part of the output
+
+[Part: MyPostDataPayloadPart]
+    Lines: MyPostDataPayloadLine
+
+[Line: MyPostDataPayloadLine]
+    Fields: MyPostDataPayloadField
+
+[Field: MyPostDataPayloadField]
+    Set As: "test"
+    XMLTag: "TestDataValue" ;; The server should look for this tag
+    ;; The value of this field will be "test", wrapped by <TestDataValue>test</TestDataValue>
+    ;; in the XML sent by Tally.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; 4. Define the Intermediate Report that triggers the POST on load         ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+[Report: MyIntermediatePostReport]
+    Form: MyIntermediatePostForm
+    Title: "Processing POST Request"
+    ;; ON:Load event triggers the HTTP POST action [cite: 901]
+    ;; Syntax for HTTP Post action [cite: 805]
+    On: Load: Yes: HTTP Post: @@MyPostRequestURL: "ASCII": MyPostDataPayloadReport: MyPostErrorReporter: MyPostSuccessReporter
+
+[Form: MyIntermediatePostForm]
+    Parts: MyIntermediatePostPart
+    Buttons: MyPostIntermediateCloseButton
+
+[Part: MyIntermediatePostPart]
+    Lines: MyIntermediatePostLine
+
+[Line: MyIntermediatePostLine]
+    Fields: MyIntermediatePostStatusField
+
+[Field: MyIntermediatePostStatusField]
+    Use: Name Field
+    Set As: "Attempting to send POST request with 'test' to " + @@MyPostRequestURL + "..."
+    Width: 80% Page
+    Align: Centre
+
+[Button: MyPostIntermediateCloseButton]
+    Key: Escape
+    Action: Form Reject ;; Standard action to close the current form
+    Title: "Back"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; 5. Define minimal Reports for POST Success and Error feedback            ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+[Report: MyPostSuccessReporter]
+    Form: MyPostSuccessForm
+    Title: "POST Success"
+[Form: MyPostSuccessForm]
+    Parts: MyPostSuccessPart
+    Buttons: MyPostSuccessCloseButton
+[Part: MyPostSuccessPart]
+    Lines: MyPostSuccessLine
+[Line: MyPostSuccessLine]
+    Fields: MyPostSuccessField
+[Field: MyPostSuccessField]
+    Use: Name Field
+    Set As: "POST request with 'test' was sent successfully!"
+    Align: Centre
+    Width: 80% Page
+[Button: MyPostSuccessCloseButton]
+    Key: Escape
+    Action: Form Reject
+    Title: "OK"
+
+[Report: MyPostErrorReporter]
+    Form: MyPostErrorForm
+    Title: "POST Error"
+[Form: MyPostErrorForm]
+    Parts: MyPostErrorPart
+    Buttons: MyPostErrorCloseButton
+[Part: MyPostErrorPart]
+    Lines: MyPostErrorLine
+[Line: MyPostErrorLine]
+    Fields: MyPostErrorField
+[Field: MyPostErrorField]
+    Use: Name Field
+    Set As: "Error sending POST request. Please check tally.imp log for more details."
+    Align: Centre
+    Width: 80% Page
+[Button: MyPostErrorCloseButton]
+    Key: Escape
+    Action: Form Reject
+    Title: "OK"

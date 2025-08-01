@@ -2,15 +2,15 @@ Metadata-Version: 2.4
 Name: tally-integration
 Version: 1.0.0
 Summary: A comprehensive Python library for integrating with Tally accounting software
-Home-page: https://github.com/yourusername/tally-integration
-Author: Your Name
-Author-email: Your Name <your.email@example.com>
-Maintainer-email: Your Name <your.email@example.com>
+Home-page: https://github.com/aadil-sengupta/Tally.Py
+Author: Aadil Sengupta
+Author-email: Aadil Sengupta <aadilsengupta27@gmail.com>
+Maintainer-email: Aadil Sengupta <aadilsengupta27@gmail.com>
 License: MIT
-Project-URL: Homepage, https://github.com/yourusername/tally-integration
-Project-URL: Bug Reports, https://github.com/yourusername/tally-integration/issues
-Project-URL: Source, https://github.com/yourusername/tally-integration
-Project-URL: Documentation, https://github.com/yourusername/tally-integration/blob/main/README.md
+Project-URL: Homepage, https://github.com/aadil-sengupta/Tally.Py
+Project-URL: Bug Reports, https://github.com/aadil-sengupta/Tally.Py/issues
+Project-URL: Source, https://github.com/aadil-sengupta/Tally.Py
+Project-URL: Documentation, https://github.com/aadil-sengupta/Tally.Py/blob/main/README.md
 Keywords: tally,accounting,api,xml,integration,erp
 Classifier: Development Status :: 4 - Beta
 Classifier: Intended Audience :: Developers
@@ -100,16 +100,24 @@ The experimental TDL collection includes:
 
 ## Installation
 
-Install the package from PyPI:
+### From Source
+
+Clone and install from the repository:
 
 ```bash
-pip install tally-integration
+# Clone the repository
+git clone https://github.com/aadil-sengupta/Tally.Py.git
+cd Tally.Py
+
+# Install the package
+pip install -e .
 ```
 
 ### Requirements
 - Python 3.7 or higher
 - Tally.ERP 9 or TallyPrime with XML API enabled
 - Network access to Tally server (default: localhost:9000)
+- `requests` library (automatically installed as dependency)
 
 ## Quick Start
 
@@ -130,10 +138,6 @@ try:
         # Get company information
         company_info = client.get_current_company()
         print("Current company info retrieved")
-        
-        # Get list of ledgers
-        ledgers = client.get_ledgers_list()
-        print("Ledgers list retrieved")
         
         # Create a new ledger
         response = client.create_ledger(

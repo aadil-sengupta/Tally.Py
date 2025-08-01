@@ -1,0 +1,12 @@
+[Function: MyAPICallableFunction]
+    ;; This function can be called from XML API
+    ;; It takes one string parameter and returns a modified string.
+
+    Parameter : InputValue : String
+    Returns   : String
+
+    ;; Declare a local variable to hold the result
+    Variable  : OutputResult : String
+
+    00 : SET : OutputResult : "TDL Function Says: " + $$String:@InputValue
+    10 : RETURN : $$String:@OutputResult

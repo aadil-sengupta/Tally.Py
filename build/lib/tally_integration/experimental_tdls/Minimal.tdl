@@ -1,0 +1,22 @@
+;; Save this as MinimalTestReport.tdl or MinimalTestReport.txt
+;; And load it into Tally (e.g., via Tally.ini or F12 > Product & Features > Manage Local TDLs)
+
+[Report: APITestReportMinimal]
+    Form: APITestFormMinimal
+
+[Form: APITestFormMinimal]
+    Part: APITestPartMinimal
+    XMLTag: "TestResponse" ;; Root tag for your data
+
+[Part: APITestPartMinimal]
+    Line: APITestLineMinimal
+    XMLTag: "TestData"
+
+[Line: APITestLineMinimal]
+    Fields: APITestFieldMinimal
+    XMLTag: "" ;; Not strictly needed if field has a tag
+
+[Field: APITestFieldMinimal]
+    Set As: "API Test Successful"
+    XMLTag: "StatusMessage"
+
