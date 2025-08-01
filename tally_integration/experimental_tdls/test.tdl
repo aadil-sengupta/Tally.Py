@@ -1,0 +1,45 @@
+;; TestMyVar.tdl - Alternative Definition Style
+
+;; Top-level variable definition, making it global
+[Variable: SV_VoucherFilterString]
+    Type    : String
+    Default : "Initial Test Value - Alt Syntax"
+
+;; A simple report to display the variable's value to confirm it's loaded.
+[Report: TestVariableReport]
+    Form  : TestVariableForm
+    Title : "Test SV_VoucherFilterString Report"
+
+[Form: TestVariableForm]
+    Parts: TestVariablePart
+    Space Bottom: 2
+
+[Part: TestVariablePart]
+    Lines: TestVariableLabelLine, TestVariableValueLine
+    Vertical: Yes
+    Border: Thin Box
+    CommonBorder: Yes
+
+[Line: TestVariableLabelLine]
+    Fields: TestVariableLabelField
+    Local : Field : TestVariableLabelField : Style : NormalBold
+
+[Field: TestVariableLabelField]
+    Set As: "Value of SV_VoucherFilterString:"
+    Width: 30
+    Align: Centre
+
+[Line: TestVariableValueLine]
+    Fields: TestVariableValueField
+
+[Field: TestVariableValueField]
+    ;; Accessing the global variable.
+    Set As: ##SV_VoucherFilterString
+    Width: 60
+    Align: Centre
+    Style: NormalBold
+    Border: Underline
+
+;; A menu item in Gateway of Tally to display the report
+[#Menu: Gateway of Tally]
+    Add: Item : Test My Variable Alt : Display : TestVariableReport

@@ -1,0 +1,12 @@
+include README.md
+include LICENSE
+include pyproject.toml
+recursive-include tally_integration *.py
+recursive-include CoreAPI/Experimental\ TDLs *.tdl
+include CoreAPI/Tally\ Developer\ Reference.txt
+include CoreAPI/TDL_Reference_Manual.pdf
+include CoreAPI/Tally\ Developer\ Reference\ Report.pdf
+include CoreAPI/Tally\ Functions.pdf
+exclude tests/*
+exclude .github/*
+exclude .gitignore
