@@ -58,6 +58,16 @@ The experimental TDL collection includes:
 
 ## Installation
 
+### From PyPI (Recommended)
+
+Install directly from the Python Package Index:
+
+```bash
+pip install tally-integration
+```
+
+Visit the [PyPI page](https://pypi.org/project/tally-integration/1.0.0/) for more details.
+
 ### From Wheel File
 
 Install directly from the pre-built wheel file:

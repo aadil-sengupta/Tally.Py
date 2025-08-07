@@ -1,7 +1,0 @@
-[Function: SimpleDoubleUDF]
-    Parameter   : InputNumber : Number
-    Returns     : Number
-    Variable    : DoubledValue : Number
-
-    Action      : Set : DoubledValue : ::InputNumber * 2
-    Action      : Return : ::DoubledValue
