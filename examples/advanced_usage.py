@@ -164,7 +164,7 @@ def main():
         print("✓ Connected to Tally successfully!")
         
         # Run advanced examples
-        create_sample_company(client)
+        #create_sample_company(client)
         create_sample_ledgers(client)
         create_sample_stock_items(client)
         create_sample_vouchers(client)
